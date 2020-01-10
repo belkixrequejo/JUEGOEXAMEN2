@@ -41,14 +41,27 @@ var score = 0;
 var gameOver = false;
 var scoreText;
 
-var game = new Phaser.Game(config);
+//variablesumero de vidas
+var hearts;
+var life = 3;
+var lifeText;
 
+var game = new Phaser.Game(config);
+//precargar
 function preload ()
 {
+
+    //CORAZONES para  visualizar
+    this.load.image('heart', 'assets/heart.png');
+    //CIELO
     this.load.image('sky', 'assets/sky.png');
+    //SUELO
     this.load.image('ground', 'assets/platform.png');
+    //ESTRELLAS
     this.load.image('star', 'assets/star.png');
+    //BONBA
     this.load.image('bomb', 'assets/bomb.png');
+    //TIPO
     this.load.spritesheet('dude', 'assets/dude.png', { frameWidth: 32, frameHeight: 48 });
 }
 
@@ -69,27 +82,27 @@ function create ()
     platforms.create(50, 250, 'ground');
     platforms.create(750, 220, 'ground');
 
-    // The player and its settings
+    // The player and its settings duende
     player = this.physics.add.sprite(100, 450, 'dude');
 
     //  Player physics properties. Give the little guy a slight bounce.
     player.setBounce(0.2);
     player.setCollideWorldBounds(true);
 
-    //  Our player animations, turning, walking left and walking right.
+    //  Nuestras animaciones de jugador, girando, caminando a la izquierda y caminando a la derecha.
     this.anims.create({
         key: 'left',
         frames: this.anims.generateFrameNumbers('dude', { start: 0, end: 3 }),
         frameRate: 10,
         repeat: -1
     });
-
+//GIRO
     this.anims.create({
         key: 'turn',
         frames: [ { key: 'dude', frame: 4 } ],
         frameRate: 20
     });
-
+//DERECHA
     this.anims.create({
         key: 'right',
         frames: this.anims.generateFrameNumbers('dude', { start: 5, end: 8 }),
@@ -97,10 +110,10 @@ function create ()
         repeat: -1
     });
 
-    //  Input Events
+    //  ENTRADA DE EVENTOS
     cursors = this.input.keyboard.createCursorKeys();
 
-    //  Some stars to collect, 12 in total, evenly spaced 70 pixels apart along the x axis
+    //  Algunas estrellas para coleccionar, 12 en total, espaciadas uniformemente a 70 píxeles a lo largo del eje x
     stars = this.physics.add.group({
         key: 'star',
         repeat: 11,
@@ -109,22 +122,25 @@ function create ()
 
     stars.children.iterate(function (child) {
 
-        //  Give each star a slightly different bounce
+        //  Dale a cada estrella un rebote ligeramente diferente
         child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
 
     });
 
     bombs = this.physics.add.group();
 
+    //Se crea un grupo
+    hearts = this.physics.add.group();
     //  The score
     scoreText = this.add.text(16, 16, 'score: 0', { fontSize: '32px', fill: '#000' });
 
-    //  Collide the player and the stars with the platforms
+    //  Choca al jugador y a las estrellas con las plataformas
     this.physics.add.collider(player, platforms);
     this.physics.add.collider(stars, platforms);
     this.physics.add.collider(bombs, platforms);
+    this.physics.add.collider(hearts, platforms);
 
-    //  Checks to see if the player overlaps with any of the stars, if he does call the collectStar function
+    // Comprueba si el jugador se superpone con alguna de las estrellas, si llama a la función collectStar
     this.physics.add.overlap(player, stars, collectStar, null, this);
 
     this.physics.add.collider(player, bombs, hitBomb, null, this);
@@ -132,24 +148,26 @@ function create ()
 
 function update ()
 {
+    //JUEGO TERMINADO
     if (gameOver)
     {
         return;
     }
-
+    //cursores a la izquierda está abajo
     if (cursors.left.isDown)
     {
+        //ESTABLECE VELOCIDAD
         player.setVelocityX(-160);
-
+        //jugador animaciones jugar izquierda verdadero
         player.anims.play('left', true);
-    }
+    }//DERECHA
     else if (cursors.right.isDown)
     {
         player.setVelocityX(160);
 
         player.anims.play('right', true);
     }
-    else
+    else//ARIBA
     {
         player.setVelocityX(0);
 
@@ -161,7 +179,7 @@ function update ()
         player.setVelocityY(-330);
     }
 }
-
+//funcion que ejecuta las eztrellas
 function collectStar (player, star)
 {
     star.disableBody(true, true);
@@ -187,19 +205,57 @@ function collectStar (player, star)
         bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
         bomb.allowGravity = false;
 
+        //crear corazon
+        var heart = hearts.create(x, 16, 'heart');
+        heart.setBounce(1);
+        heart.setCollideWorldBounds(true);
+        heart.setVelocity(Phaser.Math.Between(-200, 200), 20);
+
+
+    }
+}
+//funcion que ejecute los corazones
+
+function collectHeart(player, heart) {
+    heart.disableBody(true, true);
+
+    //  Add and update the score
+
+    if (life != 3) {
+        life++;
+        lifeText.setText('life: ' + life);
+    }
+
+}
+
+//funcion para las boncbas
+function hitBomb (player, bomb)
+{
+
+    if (life == 0) {
+        this.physics.pause();
+
+        player.setTint(0xff0000);
+
+        player.anims.play('turn');
+
+        gameOver = true;
+    }
+    else {
+        //score quitar al perder la vida
+        score = score - 50;
+        scoreText.setText('score: ' + score);
+        //Vida
+        life = life - 1;
+        if (life < 0) {
+            lifeText.setText('life: 0');
+        }
+        else {
+            lifeText.setText('life: ' + life);
+        }
     }
 }
 
-function hitBomb (player, bomb)
-{
-    this.physics.pause();
-
-    player.setTint(0xff0000);
-
-    player.anims.play('turn');
-
-    gameOver = true;
-}
 
 </script>
 
